@@ -7,6 +7,7 @@ export const LINK_UPDATED = 'LINK_UPDATED';
 export const LINK_FETCHED = 'LINK_FETCHED';
 export const LINK_DELETED = 'LINK_DELETED';
 export const LINK_SEARCHED = 'LINK_SEARCHED';
+export const ERROR = 'ERROR';
 
 export function setLinks(links){
     return {
@@ -43,6 +44,13 @@ export function linkDeleted(linkID){
     }
 }
 
+export function errorMessages(err){
+    return {
+        type: ERROR,
+        err
+    }
+}
+
 export function fetchLinks(){
     return dispatch => {
         return database.ref('links').once("value").then((snapshot) => {
@@ -53,7 +61,7 @@ export function fetchLinks(){
             });
             //Sort the records descending order by 'updateAt' value
             dispatch(setLinks(result.sort((a, b) => b.updateAt - a.updateAt)))
-        })
+        }).catch(err => dispatch(errorMessages(err)))
     }
 }
 
@@ -63,7 +71,7 @@ export function fetchLink(id){
             if(snapshot.exists()){
                 dispatch(linkFetched({ link: snapshot.val()}))
             }
-        });
+        }).catch(err => dispatch(errorMessages(err)));
     }
 }
 
@@ -82,15 +90,13 @@ export function saveLink(data){
     };
 
     return dispatch => {
-        return database.ref('links').child(obj.id).set(obj).then(() => {
-            dispatch(addLink({ link: obj }));
-        });
-
+        return database.ref('links').child(obj.id).set(obj)
+        .then(() => dispatch(addLink({ link: obj })))
+        .catch(err => dispatch(errorMessages(err)));
     }
 }
 
 export function updateLink(data){
-
 
     let d = new Date();
     let timestamp = d.getTime();
@@ -105,15 +111,16 @@ export function updateLink(data){
     };
 
     return dispatch => {
-        return database.ref('links').child(data.id).update(obj).then(() => {
-            dispatch(linkUpdated({ link: obj }))
-        });
+        return database.ref('links').child(data.id).update(obj)
+        .then(() => dispatch(linkUpdated({ link: obj })))
+        .catch(err => dispatch(errorMessages(err)));
     }
 }
 
 export function deleteLink(id){
     return dispatch => {
         return database.ref('links/'+ id).remove()
-            .then(dispatch(linkDeleted(id)));
+            .then(dispatch(linkDeleted(id)))
+            .catch(err => dispatch(errorMessages(err)));
     }
 }
